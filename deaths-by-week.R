@@ -18,10 +18,9 @@ cntry[, .(geo = Alpha_2, cntry = Name)]
 dat.pop <- get_eurostat(id = tolower("DEMO_GIND"))
 setDT(dat.pop)
 
-dat.pop
 dat.pop[, .N, keyby = .(indic_de)]
 
-dat.pop[, year := year(time)]
+dat.pop[, year := year(TIME_PERIOD)]
 
 dat.pop[indic_de == "JAN", .(year, geo, pop = values)]
 
@@ -30,9 +29,8 @@ dat.pop[indic_de == "JAN", .(year, geo, pop = values)]
 dat <- get_eurostat(id = "demo_r_mwk_ts", time_format = "raw")
 setDT(dat)
 
-dat
-
 sapply(dat, class)
+dat[, time := TIME_PERIOD]
 
 dat[, .N, keyby = .(sex)]
 dat[, .N, keyby = .(unit)]
@@ -41,7 +39,7 @@ dat[, .N, keyby = .(geo)]
 dat[, .N, keyby = .(time)]
 
 dat[, year := as.integer(substr(time, 1, 4))]
-dat[, week := as.integer(substr(time, 6, 7))]
+dat[, week := as.integer(substr(time, 7, 8))]
 
 dat[, .N, keyby = .(year)]
 dat[, .(n = .N, Y = sum(values)), keyby = .(year)][, P := prop.table(Y)][]
@@ -53,15 +51,11 @@ dcast.data.table(data = dat[sex == "T" & week < 99],
                  formula = geo ~ year, fun.aggregate = length)
 dat[geo == "DE", .N, keyby = .(week)]
 
-dat[week > 53]
-dat[week > 52]
-
-dat[grepl("W99", time)]
 dat <- dat[!grepl("W99", time)]
 
 dat[, y2020 := factor(x = ifelse(year < 2020L, 0, year - 2019L),
-                      levels = 0:3,
-                      labels = c("Y<2020", "Y=2020", "Y=2021", "Y=2022"))]
+                      levels = 0:6,
+                      labels = c("Y<2020", "Y=2020", "Y=2021", "Y=2022", "Y=2023", "Y=2024", "Y=2025"))]
 dat[, .N, keyby = .(y2020)]
 
 
@@ -70,6 +64,13 @@ dat1 <- merge(dat[sex == "T"],
               dat.pop[indic_de == "JAN", .(year, geo, pop = values)],
               by = c("year", "geo"), all.x = T)
 
+# While latest population data isn't released, let's simply assume same as last year
+current_year <- format(Sys.time(), "%Y")
+last_year <- as.character(as.integer(current_year) - 1)
+
+if (all(is.na(dat1[year == current_year & geo == "DE"]$pop))) {
+  dat1[year == current_year & geo == "DE"]$pop <- dat1[year == last_year & geo == "DE"]$pop[1]
+}
 
 dat1[, death.rate := values / pop * 1e6]
 

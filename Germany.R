@@ -10,7 +10,7 @@ country <- 'Germany'
 covid_start <- 2020
 label_pre  <- 'vor SARS-CoV2'
 label_post <- 'Pandemiejahre'
-weeks <- seq(from = 0, to = 52, by = 4)
+weeks <- c(1, 12, 24 , 36, 48)
 file_name <- paste0('output/', country, '.jpg')
 
 data <- readr::read_csv('data.csv') |>
@@ -36,67 +36,53 @@ pre_end <- max(pre$year_pre)
 #   dplyr::select(Jahr) %>%
 #   unique()
 
-plot <- function(year) {
-  dplyr::filter(post, year_post == year) |>
-    ggplot(mapping = aes(x = week, y = death.rate)) +
-    geom_line(linewidth = 1, color = "red") +
-    geom_line(data = pre, aes(alpha = year_pre, group = year_pre), show.legend = FALSE) +
-    # geom_line(
-    #   data = dplyr::filter(post, year == 2020),
-    #   mapping = aes(y = death.rate),
-    #   linewidth = 1
+(compare_pre <- ggplot(mapping = aes(x = week, y = death.rate)) +
+  geom_line(data = post,
+            color = "red",
+            linewidth = 1,
+            show.legend = FALSE
+            ) +
+  geom_line(data = pre,
+            aes(alpha = year_pre, group = year_pre),
+            show.legend = FALSE) +
+  scale_x_continuous(breaks = weeks, minor_breaks = NULL) +
+    x = '', y = '') +
+  facet_grid(. ~ year_post) +
+  theme_minimal())
+
+(compare_post <- ggplot(
+    data = post,
+    mapping = aes(x = week, y = death.rate, alpha = year_post, group = year_post)
+  ) +
+    geom_line(linewidth = 1, color = "red", show.legend = FALSE) +
+    scale_x_continuous(breaks = weeks, minor_breaks = NULL) +
+    # scale_colour_gradient2(low = 'orange', mid = "blue", midpoint = mid_year, high = "red", name = label_post) +
+    xlab('') +
+    ylab('') +
     # ) +
-    # facet_wrap(vars(country)) + # for all countries, instead of filter
-    scale_x_continuous(breaks = seq(0, 52, 13), minor_breaks = NULL) +
-    # scale_color_gradient(low = 'orange', high = "darkred", name = label_post) +
-    # ylab('Death rate [per million]') +
-    labs(
-      title = year,
-      # paste0(country, ': Death rate before & after SARS-CoV2'),
-      # subtitle = 'Sources: eurostat demo_r_mwk_ts & GitHub.com/djhurio/COVID-19',
-      # subtitle = paste0(
-      #   'Quelle: eurostat demo_r_mwk_ts & GitHub.com/djhurio/COVID-19',
-      #   '\nFrühere Krisen: Grippe im Spätwinter und Hitze im Sommer',
-      #   '\nAlterungstrend: ',
-      #   pre_start,
-      #   '/hellgrau → ',
-      #   pre_end,
-      #   '/schwarz'
-      # ),
-      # x = 'calendar week'
-      x = NULL,
-      y = NULL
-    ) +
-    theme_minimal() +
-    theme(
-      legend.position = c(.5, .8),
-      legend.background = element_rect(fill = 'white', linewidth = 0)
-    ) +
-    guides(col = guide_legend(label.position = 'top'))
-}
+    theme_minimal())
 
-(
-  aggregate_plot <- gridExtra::arrangeGrob(
-      plot(2020),
-      plot(2021),
-      plot(2022),
-      plot(2023),
-      plot(2024),
-      plot(2025),
-    ncol = 3,
-    top = paste0("Deutschland: Sterblichkeit seit SARS-CoV2\n",
-      'Quelle: eurostat demo_r_mwk_ts & GitHub.com/djhurio/COVID-19',
-      '\nFrühere Krisen: Grippe im Spätwinter und Hitze im Sommer',
-      '\nAlterungstrend: ',
-      pre_start,
-      '/hellgrau → ',
-      pre_end,
-      '/schwarz'
-    ),
-    left = "Todesfälle pro 1 Mio. Einwohner:inne:n",
-    bottom = "Kalenderwochen"
-  )
-)
+(aggregate_plot <- gridExtra::arrangeGrob(
+  compare_pre,
+  compare_post,
+  nrow = 2,
+  # widths = c(2/3, 1/3),
+  top = paste0(
+    "Deutschland: Sterblichkeit seit SARS-CoV2\n\n",
+    'Quelle: eurostat demo_r_mwk_ts & GitHub.com/djhurio/COVID-19',
+    '\nFrühere Krisen: Grippe im Spätwinter und Hitze im Sommer',
+    '\nAlterungstrend: ',
+    pre_start,
+    '/hellgrau → ',
+    pre_end,
+    '/schwarz'
+  ),
+  left = "Todesfälle pro 1 Mio. Einwohner:inne:n",
+  bottom = "Kalenderwochen"
 
-ggsave(file_name, aggregate_plot)
+))
 
+ggsave(file_name, aggregate_plot,
+       width = 3072,
+       height = 2048,
+       units = 'px')

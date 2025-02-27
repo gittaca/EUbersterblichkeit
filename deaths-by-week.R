@@ -18,7 +18,6 @@ cntry[, .(geo = Alpha_2, cntry = Name)]
 dat.pop <- get_eurostat(id = tolower("DEMO_GIND"))
 setDT(dat.pop)
 
-dat.pop
 dat.pop[, .N, keyby = .(indic_de)]
 
 dat.pop[, year := year(TIME_PERIOD)]
@@ -29,8 +28,6 @@ dat.pop[indic_de == "JAN", .(year, geo, pop = values)]
 # https://ec.europa.eu/eurostat/web/products-datasets/-/demo_r_mwk_ts
 dat <- get_eurostat(id = "demo_r_mwk_ts", time_format = "raw")
 setDT(dat)
-
-dat
 
 sapply(dat, class)
 dat[, time := TIME_PERIOD]
@@ -54,10 +51,6 @@ dcast.data.table(data = dat[sex == "T" & week < 99],
                  formula = geo ~ year, fun.aggregate = length)
 dat[geo == "DE", .N, keyby = .(week)]
 
-dat[week > 53]
-dat[week > 52]
-
-dat[grepl("W99", time)]
 dat <- dat[!grepl("W99", time)]
 
 dat[, y2020 := factor(x = ifelse(year < 2020L, 0, year - 2019L),
@@ -165,4 +158,3 @@ print(pl3)
 dev.off()
 
 fwrite(x = dat3, file = "data.csv")
-
